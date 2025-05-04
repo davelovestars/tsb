@@ -1,0 +1,164 @@
+local player = game:GetService('Players').LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild('Humanoid')
+local humanoidRootPart = character:WaitForChild('HumanoidRootPart')
+player.Idled:connect(function()
+    game:GetService('VirtualUser'):CaptureController()
+    game:GetService('VirtualUser'):ClickButton2(Vector2.new())
+end)
+local totalKills = player:WaitForChild('leaderstats'):WaitForChild('Total Kills')
+local monthlyKills = player:WaitForChild('leaderstats'):WaitForChild('Kills')
+local part = Instance.new('Part')
+part.Anchored = true
+part.Transparency = 1
+part.Name = "Farming Ground"
+part.Size = Vector3.new(2048,20,2048)
+part.CFrame = CFrame.new(150,10000,30)
+part.Parent = workspace
+local Lxchu = Instance.new("ScreenGui")
+local Interface = Instance.new("Frame")
+local Subcredits = Instance.new("TextLabel")
+local Title = Instance.new("TextLabel")
+local TotalKills = Instance.new("TextLabel")
+local KillsGranted = Instance.new("TextLabel")
+local Reset = Instance.new("TextButton")
+local UICorner = Instance.new("UICorner")
+local FarmMetheod = Instance.new("TextLabel")
+Lxchu.Name = "Farming"
+Lxchu.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+Lxchu.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+Lxchu.IgnoreGuiInset = true
+Lxchu.ResetOnSpawn = false
+Interface.Name = "Interface"
+Interface.Parent = Lxchu
+Interface.AnchorPoint = Vector2.new(0.5, 0.5)
+Interface.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+Interface.BorderColor3 = Color3.fromRGB(0, 0, 0)
+Interface.BorderSizePixel = 0
+Interface.Position = UDim2.new(0.5, 0, 0.5, 0)
+Interface.Size = UDim2.new(1, 0, 1, 0)
+Subcredits.Name = "Subcredits"
+Subcredits.Parent = Interface
+Subcredits.AnchorPoint = Vector2.new(0.5, 0.5)
+Subcredits.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+Subcredits.BackgroundTransparency = 1.000
+Subcredits.BorderColor3 = Color3.fromRGB(0, 0, 0)
+Subcredits.BorderSizePixel = 0
+Subcredits.Position = UDim2.new(0.5, 0, 0.0867948756, 0)
+Subcredits.Size = UDim2.new(1, 0, 0, 10)
+Subcredits.Font = Enum.Font.SourceSansBold
+Subcredits.Text = "Script made by theyfw_lxchu on Discord! [USE ALTS ON BLOXSTRAP WITH UR CHEATS OR IT WONT WORK! ALSO SET UR ALTS CHARACTER TO GAROU OR IDK BUT NOT SAITAMA, USE SAITAMA ON THE ACC U WANNA FARM]"
+Subcredits.TextColor3 = Color3.fromRGB(255, 255, 255)
+Subcredits.TextScaled = true
+Subcredits.TextStrokeTransparency = 0.900
+Subcredits.TextWrapped = true
+Title.Name = "Title"
+Title.Parent = Interface
+Title.AnchorPoint = Vector2.new(0.5, 0.5)
+Title.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+Title.BackgroundTransparency = 1.000
+Title.BorderColor3 = Color3.fromRGB(0, 0, 0)
+Title.BorderSizePixel = 0
+Title.Position = UDim2.new(0.5, 0, 0.0399358943, 0)
+Title.Size = UDim2.new(1, 0, 0, 50)
+Title.Font = Enum.Font.SourceSansBold
+Title.Text = "Lxchu's Auto Farmer"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextScaled = true
+Title.TextStrokeTransparency = 0.900
+Title.TextWrapped = true
+TotalKills.Name = "TotalKills"
+TotalKills.Parent = Interface
+TotalKills.AnchorPoint = Vector2.new(0.5, 0.5)
+TotalKills.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+TotalKills.BackgroundTransparency = 1.000
+TotalKills.BorderColor3 = Color3.fromRGB(0, 0, 0)
+TotalKills.BorderSizePixel = 0
+TotalKills.Position = UDim2.new(0.5, 0, 0.5, 0)
+TotalKills.Size = UDim2.new(1, 0, 0, 50)
+TotalKills.Text = "Total Kills: 0"
+TotalKills.TextColor3 = Color3.fromRGB(255, 255, 255)
+TotalKills.TextScaled = true
+TotalKills.TextStrokeTransparency = 0.900
+TotalKills.TextWrapped = true
+TotalKills.Font = Enum.Font.SourceSansBold
+KillsGranted.Name = "KillsGranted"
+KillsGranted.Parent = Interface
+KillsGranted.AnchorPoint = Vector2.new(0.5, 0.5)
+KillsGranted.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+KillsGranted.BackgroundTransparency = 1.000
+KillsGranted.BorderColor3 = Color3.fromRGB(0, 0, 0)
+KillsGranted.BorderSizePixel = 0
+KillsGranted.Position = UDim2.new(0.5, 0, 0.418589771, 0)
+KillsGranted.Size = UDim2.new(1, 0, 0, 50)
+KillsGranted.Text = "Monthly Kills: 0"
+KillsGranted.TextColor3 = Color3.fromRGB(255, 255, 255)
+KillsGranted.TextScaled = true
+KillsGranted.TextStrokeTransparency = 0.900
+KillsGranted.TextWrapped = true
+KillsGranted.Font = Enum.Font.SourceSansBold
+Reset.Name = "Reset"
+Reset.Parent = Interface
+Reset.AnchorPoint = Vector2.new(0.5, 0.5)
+Reset.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Reset.BorderColor3 = Color3.fromRGB(0, 0, 0)
+Reset.BorderSizePixel = 0
+Reset.Position = UDim2.new(0.5, 0, 0.612820566, 0)
+Reset.Size = UDim2.new(0, 750, 0, 50)
+Reset.AutoButtonColor = false
+Reset.Font = Enum.Font.SourceSansBold
+Reset.Text = "Reset Kill Count"
+Reset.TextColor3 = Color3.fromRGB(255, 255, 255)
+Reset.TextScaled = true
+Reset.TextStrokeTransparency = 0.900
+Reset.TextWrapped = true
+Reset.Font = Enum.Font.SourceSansBold
+UICorner.CornerRadius = UDim.new(0, 10)
+UICorner.Parent = Reset
+FarmMetheod.Name = "FarmMetheod"
+FarmMetheod.Parent = Interface
+FarmMetheod.AnchorPoint = Vector2.new(0.5, 0.5)
+FarmMetheod.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+FarmMetheod.BackgroundTransparency = 1.000
+FarmMetheod.BorderColor3 = Color3.fromRGB(0, 0, 0)
+FarmMetheod.BorderSizePixel = 0
+FarmMetheod.Position = UDim2.new(0.5, 0, 0.327243596, 0)
+FarmMetheod.Size = UDim2.new(1, 0, 0, 50)
+FarmMetheod.Font = Enum.Font.SourceSansBold
+FarmMetheod.Text = "Farming Character: Saitama (ill make a change support later)"
+FarmMetheod.Font = Enum.Font.SourceSansBold
+FarmMetheod.TextColor3 = Color3.fromRGB(255, 255, 255)
+FarmMetheod.TextScaled = true
+FarmMetheod.TextStrokeTransparency = 0.900
+FarmMetheod.TextWrapped = true
+TotalKills.Text = "Total Kills: " .. totalKills.Value
+totalKills.Changed:Connect(function()
+TotalKills.Text = "Total Kills: " .. totalKills.Value
+end)
+KillsGranted.Text = "Total Monthly Kills: " .. monthlyKills.Value
+monthlyKills.Changed:Connect(function()
+KillsGranted.Text = "Total Monthly Kills: " .. monthlyKills.Value
+end)
+task.wait(.1)
+while wait(.1) do
+    if player.Backpack:FindFirstChild('Shove') then
+        humanoidRootPart.CFrame = part.CFrame * CFrame.new(0,11,0)
+        for _, tool in pairs(player.Backpack:GetChildren()) do
+            if tool:IsA('Tool') then
+                humanoid:EquipTool(tool)
+                task.wait(.001)
+                humanoid:UnequipTools()
+                mouse1click()
+                mouse1release()
+                task.wait(.001)
+            end
+        end
+    else
+        Lxchu.Enabled = false
+        humanoidRootPart.CFrame = part.CFrame * CFrame.new(0,11,-2)
+        player.CharacterAdded:Connect(function(char)
+            humanoidRootPart = char:WaitForChild('HumanoidRootPart')
+            humanoidRootPart.CFrame = part.CFrame * CFrame.new(0,11,-2)
+        end)
+    end
+end

@@ -43,7 +43,7 @@ part.Parent = workspace
 
 
 local Window = Fluent:CreateWindow({
-    Title = "The strongest Auto farm  " .. Fluent.Version,
+    Title = "The strongest Auto farm v1.2.0 " ,
     SubTitle = "by  theyfw_lxchu and collab with Dave_Down ",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
@@ -70,28 +70,15 @@ do
 
 
 
--- Function to update both the paragraph Content (TextLabel) and direct TextLabels
-        local totalText = "Total Kills: " .. totalKills.Value
-        local monthlyText = "Total Monthly Kills: " .. monthlyKills.Value
+    Tabs.Main:AddParagraph({
+        Title = "TSB Autofarm",
+        Content = "Total Kills: " .. totalKills.Value
+    })
 
-        -- Update the TextLabel inside the paragraph (assuming Content is a TextLabel)
-        if Tabs.Main and Tabs.Main.AddParagraph then
-            Tabs.Main:AddParagraph({
-                Title = "TSB Autofarm",
-                Content = totalText  -- Content acts as a TextLabel
-            })
-            
-            Tabs.Main:AddParagraph({
-                Title = "TSB Autofarm",
-                Content = monthlyText  -- Content acts as a TextLabel
-            })
-        end
-
-
-
-
--- Connect change events
-totalKills.Changed:Connect(updateKillDisplays)
+    Tabs.Main:AddParagraph({
+        Title = "TSB Autofarm",
+        Content = "Total Monthly Kills: " .. monthlyKills.Value
+    })
 
 
 
@@ -122,18 +109,14 @@ totalKills.Changed:Connect(updateKillDisplays)
                     end
                 end
             else
-                -- Teleport to safe spot if no Shove
-                humanoidRootPart.CFrame = part.CFrame * CFrame.new(0, 11, -2)
-                
-                -- Setup respawn handler if not already exists
-                if not teleportConnection then
-                    teleportConnection = player.CharacterAdded:Connect(function(char)
-                        local hrp = char:WaitForChild("HumanoidRootPart")
-                        hrp.CFrame = part.CFrame * CFrame.new(0, 11, -2)
+                humanoidRootPart.CFrame = part.CFrame * CFrame.new(0,11,-2)
+        player.CharacterAdded:Connect(function(char)
+            humanoidRootPart = char:WaitForChild('HumanoidRootPart')
+            humanoidRootPart.CFrame = part.CFrame * CFrame.new(0,11,-2)
                     end)
                 end
             end
-        end
+        
         
         -- Cleanup when toggle is off
         if not Options.MyToggle.Value then

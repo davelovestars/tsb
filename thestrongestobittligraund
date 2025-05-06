@@ -44,7 +44,7 @@ part.Parent = workspace
 
 
 local Window = Fluent:CreateWindow({
-    Title = "The strongest Auto farm  " .. Fluent.Version,
+    Title = "The strongest Auto farm  V1.3" ,
     SubTitle = "by  theyfw_lxchu and collab with Dave_Down ",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
@@ -63,13 +63,16 @@ local Options = Fluent.Options
 
 do
     Fluent:Notify({
-        Title = "Notification",
-        Content = "This is a notification",
-        SubContent = "SubContent", -- Optional
+        Title = "👅👅👅👅",
+        Content = "Loading TSB Autofarm...",
+        SubContent = "If only this shows contact me on discord, Dave_Down", -- Optional
         Duration = 5 -- Set to nil to make the notification not disappear
     })
 
-
+    Tabs.Main:AddParagraph({
+        Title = "TSB Autofarm",
+        Content = "Welcome..  " .. character.Name
+    })
 
     Tabs.Main:AddParagraph({
         Title = "TSB Autofarm",
@@ -131,7 +134,7 @@ do
     Options.MyToggle:SetValue(false)  -- Initialize as off
 
 
-    local Toggle = Tabs.Main:AddToggle("Auto claim emote ", {Title = "Auto claim emote 🔥🔥", Default = false })
+    local Toggle = Tabs.Main:AddToggle("Auto claim emote ", {Title = "Auto claim emote 🔥🔥🔥", Default = false })
 
     Toggle:OnChanged(function()
         if value then

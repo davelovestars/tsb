@@ -6,8 +6,9 @@ local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.
 
 --- variables autofarm---
 
-
+local Players = game:GetService("Players")
 local player = game:GetService('Players').LocalPlayer
+local localPlayer = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild('Humanoid')
 local humanoidRootPart = character:WaitForChild('HumanoidRootPart')
@@ -43,7 +44,7 @@ part.Parent = workspace
 
 
 local Window = Fluent:CreateWindow({
-    Title = "The strongest Auto farm v1.2.0 " ,
+    Title = "The strongest Auto farm  " .. Fluent.Version,
     SubTitle = "by  theyfw_lxchu and collab with Dave_Down ",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
@@ -130,8 +131,23 @@ do
     Options.MyToggle:SetValue(false)  -- Initialize as off
 
 
+    local Toggle = Tabs.Main:AddToggle("Auto claim emote ", {Title = "Auto claim emote 🔥🔥", Default = false })
 
+    Toggle:OnChanged(function()
+        if value then
+                local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
+            local args = {
+                [1] = {
+                    ["Goal"] = "Emote Spin"
+                }
+            }
+            
+            -- Replace "Dave_DownOnRecovery" with the player's character name
+            workspace:WaitForChild("Live", 9e9):WaitForChild(character.Name, 9e9):WaitForChild("Communicate", 9e9):FireServer(unpack(args))
+        end
+    end)
 
+    Options.MyToggle:SetValue(false)
 
 
 end

@@ -147,22 +147,39 @@ do
 
 
 
-    local Toggle = Tabs.Main:AddToggle("Auto claim emote ", {Title = "Auto claim emote 🔥🔥🔥", Default = false })
+local Toggle = Tabs.Main:AddToggle("Auto claim emote", {
+    Title = "Auto claim emote 🔥🔥🔥",
+    Default = false
+})
 
-    Toggle:OnChanged(function(value)
-        if value then
-                local character = game:GetService("Players").LocalPlayer.Character or game:GetService("Players").LocalPlayer.CharacterAdded:Wait()
+Toggle:OnChanged(function(value)
+    if value then
+        task.spawn(function()
+            local player = game:GetService("Players").LocalPlayer
+            local character = player.Character or player.CharacterAdded:Wait()
+
+            while Toggle.Value and task.wait(2) do -- cada 2s, ajusta si quieres
                 local args = {
                     [1] = {
                         ["Goal"] = "Emote Spin"
                     }
                 }
 
-                workspace:WaitForChild("Live", 9e9):WaitForChild(character.Name, 9e9):WaitForChild("Communicate", 9e9):FireServer(unpack(args))
-        end
-    end)
+                local success, err = pcall(function()
+                    workspace:WaitForChild("Live", 9e9)
+                        :WaitForChild(character.Name, 9e9)
+                        :WaitForChild("Communicate", 9e9)
+                        :FireServer(unpack(args))
+                end)
 
-    Options.MyToggle:SetValue(false)
+                if not success then
+                    warn("Error auto claim emote:", err)
+                end
+            end
+        end)
+    end
+end)
+
 
 
 

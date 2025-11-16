@@ -91,6 +91,10 @@ do
         Title = "Change log 1.6v",
         Content = "fixed auto emote, added insta kill, fixed some other potential bugs",
     })
+    Tabs.Main:AddParagraph({
+        Title = "Contact",
+        Content = "dave_down on discord to solve any problems" 
+    })
 
     Tabs.Main:AddParagraph({
         Title = "TSB Autofarm",

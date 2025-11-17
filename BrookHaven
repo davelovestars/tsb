@@ -1,0 +1,310 @@
+-- Brookhaven Misc Script
+-- by Dave_Down
+
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
+local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
+
+-- Services
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+
+-- Variables
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+
+-- State variables
+local speedEnabled = false
+local speedValue = 16
+local flyEnabled = false
+local flySpeed = 50
+local noclipEnabled = false
+local infJumpEnabled = false
+
+-- Update character references on respawn
+player.CharacterAdded:Connect(function(char)
+    character = char
+    humanoid = char:WaitForChild("Humanoid")
+    humanoidRootPart = char:WaitForChild("HumanoidRootPart")
+end)
+
+-- Anti-AFK
+player.Idled:Connect(function()
+    game:GetService("VirtualUser"):CaptureController()
+    game:GetService("VirtualUser"):ClickButton2(Vector2.new())
+end)
+
+-- Create Window
+local Window = Fluent:CreateWindow({
+    Title = "Brookhaven Misc Script V1.0",
+    SubTitle = "by Dave_Down",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(580, 460),
+    Acrylic = true,
+    Theme = "Dark",
+    MinimizeKey = Enum.KeyCode.LeftControl
+})
+
+local Tabs = {
+    Main = Window:AddTab({ Title = "Main", Icon = "" }),
+    Teleports = Window:AddTab({ Title = "Teleports", Icon = "" }),
+    Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
+}
+
+local Options = Fluent.Options
+
+-- Main Tab
+do
+    Fluent:Notify({
+        Title = "Brookhaven Misc",
+        Content = "Script loaded successfully!",
+        Duration = 5
+    })
+
+    Tabs.Main:AddParagraph({
+        Title = "Welcome",
+        Content = "Welcome to Brookhaven Misc Script, " .. player.Name
+    })
+
+    -- Speed Slider
+    local SpeedSlider = Tabs.Main:AddSlider("SpeedSlider", {
+        Title = "Walk Speed",
+        Description = "Adjust your walk speed",
+        Default = 16,
+        Min = 16,
+        Max = 200,
+        Rounding = 0,
+        Callback = function(Value)
+            speedValue = Value
+            if character and humanoid then
+                humanoid.WalkSpeed = Value
+            end
+        end
+    })
+
+    -- Speed Toggle
+    local SpeedToggle = Tabs.Main:AddToggle("SpeedToggle", {
+        Title = "Speed Enabled",
+        Default = false
+    })
+
+    SpeedToggle:OnChanged(function(value)
+        speedEnabled = value
+        if value then
+            RunService.Heartbeat:Connect(function()
+                if speedEnabled and character and humanoid then
+                    humanoid.WalkSpeed = speedValue
+                end
+            end)
+        else
+            if character and humanoid then
+                humanoid.WalkSpeed = 16
+            end
+        end
+    end)
+
+    -- Jump Power Slider
+    local JumpSlider = Tabs.Main:AddSlider("JumpSlider", {
+        Title = "Jump Power",
+        Description = "Adjust your jump power",
+        Default = 50,
+        Min = 50,
+        Max = 200,
+        Rounding = 0,
+        Callback = function(Value)
+            if character and humanoid then
+                humanoid.JumpPower = Value
+            end
+        end
+    })
+
+    -- Infinite Jump Toggle
+    local InfJumpToggle = Tabs.Main:AddToggle("InfJumpToggle", {
+        Title = "Infinite Jump",
+        Default = false
+    })
+
+    InfJumpToggle:OnChanged(function(value)
+        infJumpEnabled = value
+    end)
+
+    game:GetService("UserInputService").JumpRequest:Connect(function()
+        if infJumpEnabled and character and humanoid then
+            humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+        end
+    end)
+
+    -- NoClip Toggle
+    local NoclipToggle = Tabs.Main:AddToggle("NoclipToggle", {
+        Title = "NoClip",
+        Default = false
+    })
+
+    NoclipToggle:OnChanged(function(value)
+        noclipEnabled = value
+    end)
+
+    RunService.Stepped:Connect(function()
+        if noclipEnabled and character then
+            for _, part in pairs(character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                end
+            end
+        end
+    end)
+
+    -- Fly Toggle
+    local FlyToggle = Tabs.Main:AddToggle("FlyToggle", {
+        Title = "Fly",
+        Default = false
+    })
+
+    local flyConnection
+    FlyToggle:OnChanged(function(value)
+        flyEnabled = value
+        
+        if value then
+            local bodyVelocity = Instance.new("BodyVelocity")
+            bodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+            bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+            bodyVelocity.Parent = humanoidRootPart
+
+            local bodyGyro = Instance.new("BodyGyro")
+            bodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+            bodyGyro.P = 9e4
+            bodyGyro.Parent = humanoidRootPart
+
+            flyConnection = RunService.Heartbeat:Connect(function()
+                if not flyEnabled or not character or not humanoidRootPart then
+                    if bodyVelocity then bodyVelocity:Destroy() end
+                    if bodyGyro then bodyGyro:Destroy() end
+                    if flyConnection then flyConnection:Disconnect() end
+                    return
+                end
+
+                local camera = workspace.CurrentCamera
+                local moveDirection = Vector3.new(0, 0, 0)
+                
+                if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.W) then
+                    moveDirection = moveDirection + camera.CFrame.LookVector
+                end
+                if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.S) then
+                    moveDirection = moveDirection - camera.CFrame.LookVector
+                end
+                if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.A) then
+                    moveDirection = moveDirection - camera.CFrame.RightVector
+                end
+                if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.D) then
+                    moveDirection = moveDirection + camera.CFrame.RightVector
+                end
+                if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.Space) then
+                    moveDirection = moveDirection + Vector3.new(0, 1, 0)
+                end
+                if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.LeftShift) then
+                    moveDirection = moveDirection - Vector3.new(0, 1, 0)
+                end
+
+                bodyVelocity.Velocity = moveDirection * flySpeed
+                bodyGyro.CFrame = camera.CFrame
+            end)
+        else
+            if flyConnection then
+                flyConnection:Disconnect()
+            end
+            if humanoidRootPart then
+                for _, obj in pairs(humanoidRootPart:GetChildren()) do
+                    if obj:IsA("BodyVelocity") or obj:IsA("BodyGyro") then
+                        obj:Destroy()
+                    end
+                end
+            end
+        end
+    end)
+
+    -- Fly Speed Slider
+    Tabs.Main:AddSlider("FlySpeedSlider", {
+        Title = "Fly Speed",
+        Description = "Adjust fly speed",
+        Default = 50,
+        Min = 10,
+        Max = 200,
+        Rounding = 0,
+        Callback = function(Value)
+            flySpeed = Value
+        end
+    })
+end
+
+-- Teleports Tab
+do
+    Tabs.Teleports:AddParagraph({
+        Title = "Teleports",
+        Content = "Quick teleport to common locations"
+    })
+
+    -- Teleport to Player
+    local playerNames = {}
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= player then
+            table.insert(playerNames, p.Name)
+        end
+    end
+
+    local PlayerDropdown = Tabs.Teleports:AddDropdown("PlayerDropdown", {
+        Title = "Select Player",
+        Values = playerNames,
+        Multi = false,
+        Default = 1,
+    })
+
+    Tabs.Teleports:AddButton({
+        Title = "Teleport to Player",
+        Description = "TP to selected player",
+        Callback = function()
+            local selectedPlayer = Players:FindFirstChild(PlayerDropdown.Value)
+            if selectedPlayer and selectedPlayer.Character and selectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                if humanoidRootPart then
+                    humanoidRootPart.CFrame = selectedPlayer.Character.HumanoidRootPart.CFrame
+                    Fluent:Notify({
+                        Title = "Teleported",
+                        Content = "Teleported to " .. selectedPlayer.Name,
+                        Duration = 3
+                    })
+                end
+            end
+        end
+    })
+
+    -- Common locations (you can add more based on Brookhaven map)
+    Tabs.Teleports:AddButton({
+        Title = "Teleport to Spawn",
+        Description = "Go back to spawn",
+        Callback = function()
+            if humanoidRootPart then
+                humanoidRootPart.CFrame = CFrame.new(0, 5, 0)
+            end
+        end
+    })
+end
+
+-- Addons
+SaveManager:SetLibrary(Fluent)
+InterfaceManager:SetLibrary(Fluent)
+
+SaveManager:IgnoreThemeSettings()
+SaveManager:SetIgnoreIndexes({})
+InterfaceManager:SetFolder("FluentScriptHub")
+SaveManager:SetFolder("FluentScriptHub/brookhaven")
+
+InterfaceManager:BuildInterfaceSection(Tabs.Settings)
+SaveManager:BuildConfigSection(Tabs.Settings)
+
+Window:SelectTab(1)
+
+
+
+SaveManager:LoadAutoloadConfig()

@@ -55,10 +55,32 @@ local function instaKill()
     end
 end
 
+-- anti slow function
+local RunService = game:GetService("RunService")
+local antiSlowEnabled = false
+
+local function clearIfExists(obj, names)
+    for _, name in ipairs(names) do
+        local child = obj:FindFirstChild(name)
+        if child then child:Destroy() end
+        if obj:GetAttribute(name) then obj:SetAttribute(name, false) end
+    end
+end
+
+player.CharacterAdded:Connect(function(char)
+    character = char
+end)
+
+RunService.RenderStepped:Connect(function()
+    if antiSlowEnabled and character then
+        clearIfExists(character, {"Freeze", "Slowed", "GlobalStun"})
+    end
+end)
+
 --- script main---
 
 local Window = Fluent:CreateWindow({
-    Title = "The strongest Auto farm  V1.6",
+    Title = "The strongest Auto farm  V2.0",
     SubTitle = "by theyfw_lxchu and collab with Dave_Down",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
@@ -69,6 +91,9 @@ local Window = Fluent:CreateWindow({
 
 local Tabs = {
     Main = Window:AddTab({ Title = "Main", Icon = "" }),
+    Autofarm = Window:AddTab({ Title = "AutoFarm Alt", Icon = "" }),
+    Autofarm2 = Window:AddTab({ Title = "AutoFarm Blatant", Icon = "" }),
+    Misc = Window:AddTab({ Title = "Misc", Icon = "" }),
     Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
 }
 
@@ -88,14 +113,14 @@ do
     })
 
     Tabs.Main:AddParagraph({
-        Title = "Change log 1.6v",
-        Content = "fixed auto emote, added insta kill, fixed some other potential bugs",
-    })
-    Tabs.Main:AddParagraph({
-        Title = "Contact",
-        Content = "dave_down on discord to solve any problems" 
+        Title = "Change log 2.0v",
+        Content = "Added another method of autofarm,added anti stun,Fixed potential bugs",
     })
 
+    Tabs.Main:AddParagraph({
+        Title = "If any problems",
+        Content = "Contact dave_down on discord ",
+    })
     Tabs.Main:AddParagraph({
         Title = "TSB Autofarm",
         Content = "Total Kills: " .. totalKills
@@ -107,7 +132,7 @@ do
     })
 
     -- toggle autofarm
-    local Toggle = Tabs.Main:AddToggle("MyToggle", {
+    local Toggle = Tabs.Autofarm:AddToggle("MyToggle", {
         Title = "Auto Farm Toggle",
         Default = false
     })
@@ -151,7 +176,7 @@ do
 
 
 
-local Toggle = Tabs.Main:AddToggle("Auto claim emote", {
+local Toggle = Tabs.Misc:AddToggle("Auto claim emote", {
     Title = "Auto claim emote 🔥🔥🔥",
     Default = false
 })
@@ -184,11 +209,269 @@ Toggle:OnChanged(function(value)
     end
 end)
 
+        local AntiSlowToggle = Tabs.Misc:AddToggle("AntiSlowToggle", {Title = "Anti Slow", Default = false })
 
+    AntiSlowToggle:OnChanged(function(value)
+        print("Anti Slow changed:", value)
+        antiSlowEnabled = value
+    end)
 
+    Options.AntiSlowToggle:SetValue(false)
+    -- noclip functions and toggle
+    local NoclipConn = nil
+    local Clip = true
+    local floatName = nil
+
+    local function noclip()
+        Clip = false
+        local function Nocl()
+            if Clip == false and player.Character then
+                for _, v in pairs(player.Character:GetDescendants()) do
+                    if v:IsA('BasePart') and v.CanCollide and v.Name ~= floatName then
+                        v.CanCollide = false
+                    end
+                end
+            end
+            wait(0.21)
+        end
+        NoclipConn = RunService.Stepped:Connect(Nocl)
+    end
+
+    local function clip()
+        if NoclipConn then NoclipConn:Disconnect() NoclipConn = nil end
+        Clip = true
+    end
+
+    local NoclipToggle = Tabs.Misc:AddToggle("NoclipToggle", {Title = "NoClip", Default = false})
+    NoclipToggle:OnChanged(function(state)
+        if state then
+            noclip()
+        else
+            clip()
+        end
+    end)
+
+    Options.NoclipToggle:SetValue(false)
+
+    -- toggle trash thrower
+    local TrashToggle = Tabs.Autofarm2:AddToggle("TrashToggle", {Title = "Trash Thrower", Default = false })
+
+    TrashToggle:OnChanged(function(value)
+        if value then
+            task.spawn(function()
+                while Options.TrashToggle.Value do
+                    task.wait(0.6)
+
+                    local map = workspace:FindFirstChild("Map")
+                    local trashFolder = map and map:FindFirstChild("Trash")
+                    if not trashFolder then
+                        warn("Map.Trash not found!")
+                        break
+                    end
+
+                    -- collect all trashcan candidates
+                    local trashCandidates = {}
+                    for _, v in ipairs(trashFolder:GetChildren()) do
+                        if tostring(v.Name):lower():find("trashcan") then
+                            table.insert(trashCandidates, v)
+                        elseif v:FindFirstChild("Trashcan") then
+                            table.insert(trashCandidates, v:FindFirstChild("Trashcan"))
+                        end
+                    end
+
+                    -- fallback to index-based candidate if none found
+                    if #trashCandidates == 0 and #trashFolder:GetChildren() >= 10 then
+                        local candidate = trashFolder:GetChildren()[10]
+                        local nested = candidate and (candidate:FindFirstChild("Trashcan") or candidate)
+                        if nested then table.insert(trashCandidates, nested) end
+                    end
+
+                    if #trashCandidates == 0 then
+                        warn("No Trashcan models found in Map.Trash")
+                        break
+                    end
+
+                    -- iterate every trashcan and perform the sequence
+                    for _, trashCanModel in ipairs(trashCandidates) do
+                        if not Options.TrashToggle.Value then break end
+
+                        local targetPart = trashCanModel:FindFirstChildWhichIsA("BasePart") or trashCanModel:FindFirstChild("Handle") or (trashCanModel:IsA("BasePart") and trashCanModel)
+                        if not targetPart then
+                            warn("Skipping Trashcan: no BasePart/Handle found")
+                            continue
+                        end
+
+                        -- TP to the side of the trashcan and face it (avoid teleporting into exact coordinate)
+                        local sideOffset = (targetPart.Size.X / 2) + 3
+                        local sidePos = targetPart.Position + (targetPart.CFrame.RightVector * sideOffset) + Vector3.new(0, 2, 0)
+                        humanoidRootPart.CFrame = CFrame.new(sidePos, targetPart.Position)
+                        task.wait(0.18)
+
+                        local clickDetector = trashCanModel:FindFirstChildOfClass("ClickDetector") or targetPart:FindFirstChildOfClass("ClickDetector")
+                        local prompt = trashCanModel:FindFirstChildOfClass("ProximityPrompt") or targetPart:FindFirstChildOfClass("ProximityPrompt")
+
+                        -- interact (pick up) -- MeshPart-specific approach: proximity/touch first, then RemoteEvent/ClickDetector
+                        local interacted = false
+
+                        -- 1) Try RemoteEvent LeftClick method first
+                        local success = pcall(function()
+                            local args = {[1] = {["Goal"] = "LeftClick"}}
+                            workspace:WaitForChild("Live", 9e9)
+                                :WaitForChild(character.Name, 9e9)
+                                :WaitForChild("Communicate", 9e9)
+                                :FireServer(unpack(args))
+                            task.wait(0.1)
+                            local args2 = {[1] = {["Goal"] = "LeftClickRelease"}}
+                            workspace:WaitForChild("Live", 9e9)
+                                :WaitForChild(character.Name, 9e9)
+                                :WaitForChild("Communicate", 9e9)
+                                :FireServer(unpack(args2))
+                        end)
+                        
+                        if success then
+                            interacted = true
+                            task.wait(0.22)
+                        end
+
+                        -- 2) For MeshParts, try proximity/touch simulation if LeftClick didn't work
+                        if not interacted and targetPart:IsA("MeshPart") and type(firetouchinterest) == "function" and humanoidRootPart then
+                            pcall(firetouchinterest, targetPart, humanoidRootPart, 0)
+                            task.wait(0.08)
+                            pcall(firetouchinterest, targetPart, humanoidRootPart, 1)
+                            interacted = true
+                            task.wait(0.22)
+                        end
+
+                        -- 3) Try RemoteEvent/Function on the model if previous methods didn't work
+                        if not interacted then
+                            for _, d in ipairs(trashCanModel:GetDescendants()) do
+                                if d:IsA("RemoteEvent") then
+                                    pcall(function() d:FireServer() end)
+                                    interacted = true
+                                    task.wait(0.22)
+                                    break
+                                elseif d:IsA("RemoteFunction") then
+                                    pcall(function() d:InvokeServer() end)
+                                    interacted = true
+                                    task.wait(0.22)
+                                    break
+                                end
+                            end
+                        end
+
+                        -- 4) Try ClickDetector on the MeshPart
+                        if not interacted and clickDetector then
+                            if type(fireclickdetector) == "function" then
+                                pcall(fireclickdetector, clickDetector)
+                                interacted = true
+                            else
+                                pcall(function() clickDetector:MouseClick(player) end)
+                                interacted = true
+                            end
+                            task.wait(0.22)
+                        end
+
+                        -- 5) Try ProximityPrompt on the MeshPart
+                        if not interacted and prompt then
+                            pcall(function() prompt:InputHoldBegin() end)
+                            task.wait(0.2)
+                            pcall(function() prompt:InputHoldEnd() end)
+                            interacted = true
+                            task.wait(0.22)
+                        end
+
+                        -- 6) Last resort: VirtualUser screen click
+                        if not interacted then
+                            local camera = workspace.CurrentCamera
+                            local vu = game:GetService("VirtualUser")
+                            if camera and targetPart then
+                                local ok, originalCFrame = pcall(function() return camera.CFrame end)
+                                local okType = pcall(function() return camera.CameraType end)
+                                pcall(function()
+                                    camera.CameraType = Enum.CameraType.Scriptable
+                                    camera.CFrame = CFrame.new(targetPart.Position + (camera.CFrame.LookVector * -6), targetPart.Position)
+                                end)
+                                task.wait(0.06)
+                                local viewport = nil
+                                pcall(function() viewport = camera.ViewportSize end)
+                                local center = viewport and Vector2.new(viewport.X / 2, viewport.Y / 2) or Vector2.new(400, 300)
+                                pcall(function()
+                                    vu:CaptureController()
+                                    vu:ClickButton1(center)
+                                end)
+                                task.wait(0.18)
+                                pcall(function()
+                                    if okType then camera.CameraType = Enum.CameraType.Custom end
+                                    if ok then camera.CFrame = originalCFrame end
+                                end)
+                                interacted = true
+                            end
+                        end
+
+                        if not Options.TrashToggle.Value then break end
+
+                        -- pick a random valid player each iteration
+                        local playersList = Players:GetPlayers()
+                        local validTargets = {}
+                        for _, p in ipairs(playersList) do
+                            if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                                table.insert(validTargets, p)
+                            end
+                        end
+
+                        if #validTargets == 0 then
+                            task.wait(0.5)
+                            continue
+                        end
+
+                        local chosen = validTargets[math.random(1, #validTargets)]
+                        local targetHRP = chosen.Character and chosen.Character:FindFirstChild("HumanoidRootPart")
+                        if targetHRP then
+                            humanoidRootPart.CFrame = targetHRP.CFrame + Vector3.new(0, 3, 0)
+                            task.wait(0.15)
+
+                            -- trigger throw using LeftClick method
+                            local throwSuccess = pcall(function()
+                                local args = {[1] = {["Goal"] = "LeftClick"}}
+                                workspace:WaitForChild("Live", 9e9)
+                                    :WaitForChild(character.Name, 9e9)
+                                    :WaitForChild("Communicate", 9e9)
+                                    :FireServer(unpack(args))
+                                task.wait(0.1)
+                                local args2 = {[1] = {["Goal"] = "LeftClickRelease"}}
+                                workspace:WaitForChild("Live", 9e9)
+                                    :WaitForChild(character.Name, 9e9)
+                                    :WaitForChild("Communicate", 9e9)
+                                    :FireServer(unpack(args2))
+                            end)
+
+                            -- fallback to other methods if LeftClick didn't work
+                            if not throwSuccess and clickDetector then
+                                if type(fireclickdetector) == "function" then
+                                    pcall(fireclickdetector, clickDetector)
+                                else
+                                    pcall(function() clickDetector:MouseClick(player) end)
+                                end
+                            elseif prompt then
+                                pcall(function() prompt:InputHoldBegin() end)
+                                task.wait(0.06)
+                                pcall(function() prompt:InputHoldEnd() end)
+                            end
+                        end
+
+                        task.wait(0.5)
+                    end
+
+                    task.wait(1)
+                end
+            end)
+        end
+    end)
+
+    Options.TrashToggle:SetValue(false)
 
     -- toggle instakill
-    local InstaToggle = Tabs.Main:AddToggle("InstaKillToggle", {Title = "Insta Kill (use in alt)", Default = false})
+    local InstaToggle = Tabs.Autofarm:AddToggle("InstaKillToggle", {Title = "Insta Kill (use in alt)", Default = false})
 
     local instaKillEnabled = false
 
@@ -216,6 +499,7 @@ end)
     Options.InstaKillToggle:SetValue(false)
 end
 
+
 -- addons
 SaveManager:SetLibrary(Fluent)
 InterfaceManager:SetLibrary(Fluent)
@@ -237,3 +521,5 @@ Fluent:Notify({
 })
 
 SaveManager:LoadAutoloadConfig()
+
+

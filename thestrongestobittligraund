@@ -69,11 +69,13 @@ end
 
 player.CharacterAdded:Connect(function(char)
     character = char
+    humanoid = char:WaitForChild("Humanoid")
+    humanoidRootPart = char:WaitForChild("HumanoidRootPart")
 end)
 
 RunService.RenderStepped:Connect(function()
     if antiSlowEnabled and character then
-        clearIfExists(character, {"Freeze", "Slowed", "GlobalStun"})
+        clearIfExists(character, {"Freeze", "Slowed", "GlobalStun","NoBlock","NoJump","StopRunning","Ragdoll","RagdollSim","ComboStun","BeingGrabbed"})
     end
 end)
 
@@ -301,87 +303,105 @@ end)
                             continue
                         end
 
-                        -- TP to the side of the trashcan and face it (avoid teleporting into exact coordinate)
+                        -- Update character references in case of respawn
+                        if not character or not character.Parent then
+                            character = player.Character
+                        end
+                        if character then
+                            humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+                        end
+                        
+                        if not humanoidRootPart then
+                            warn("HumanoidRootPart not found, skipping trashcan")
+                            continue
+                        end
+
+                        -- TP to the side of the trashcan and face it
+                        print("Teleporting to trashcan:", trashCanModel.Name)
                         local sideOffset = (targetPart.Size.X / 2) + 3
                         local sidePos = targetPart.Position + (targetPart.CFrame.RightVector * sideOffset) + Vector3.new(0, 2, 0)
                         humanoidRootPart.CFrame = CFrame.new(sidePos, targetPart.Position)
-                        task.wait(0.18)
+                        task.wait(0.3) -- Wait for teleport to register
 
                         local clickDetector = trashCanModel:FindFirstChildOfClass("ClickDetector") or targetPart:FindFirstChildOfClass("ClickDetector")
                         local prompt = trashCanModel:FindFirstChildOfClass("ProximityPrompt") or targetPart:FindFirstChildOfClass("ProximityPrompt")
 
-                        -- interact (pick up) -- MeshPart-specific approach: proximity/touch first, then RemoteEvent/ClickDetector
-                        local interacted = false
+                        -- ===== GRAB TRASHCAN PHASE =====
+                        print("Attempting to grab trashcan...")
+                        local grabbed = false
 
-                        -- 1) Try RemoteEvent LeftClick method first
-                        local success = pcall(function()
-                            local args = {[1] = {["Goal"] = "LeftClick"}}
-                            workspace:WaitForChild("Live", 9e9)
-                                :WaitForChild(character.Name, 9e9)
-                                :WaitForChild("Communicate", 9e9)
-                                :FireServer(unpack(args))
+                        -- 1) Try RemoteEvent LeftClick method first (GRAB)
+                        for grabAttempt = 1, 2 do
+                            local success = pcall(function()
+                                local args = {[1] = {["Goal"] = "LeftClick"}}
+                                workspace:WaitForChild("Live", 9e9)
+                                    :WaitForChild(character.Name, 9e9)
+                                    :WaitForChild("Communicate", 9e9)
+                                    :FireServer(unpack(args))
+                                task.wait(0.08)
+                                local args2 = {[1] = {["Goal"] = "LeftClickRelease"}}
+                                workspace:WaitForChild("Live", 9e9)
+                                    :WaitForChild(character.Name, 9e9)
+                                    :WaitForChild("Communicate", 9e9)
+                                    :FireServer(unpack(args2))
+                            end)
+                            
+                            if success then
+                                grabbed = true
+                                print("Grabbed with LeftClick method")
+                                break
+                            end
                             task.wait(0.1)
-                            local args2 = {[1] = {["Goal"] = "LeftClickRelease"}}
-                            workspace:WaitForChild("Live", 9e9)
-                                :WaitForChild(character.Name, 9e9)
-                                :WaitForChild("Communicate", 9e9)
-                                :FireServer(unpack(args2))
-                        end)
-                        
-                        if success then
-                            interacted = true
-                            task.wait(0.22)
                         end
 
-                        -- 2) For MeshParts, try proximity/touch simulation if LeftClick didn't work
-                        if not interacted and targetPart:IsA("MeshPart") and type(firetouchinterest) == "function" and humanoidRootPart then
+                        -- 2) Try touch simulation if LeftClick didn't work
+                        if not grabbed and targetPart:IsA("MeshPart") and type(firetouchinterest) == "function" and humanoidRootPart then
                             pcall(firetouchinterest, targetPart, humanoidRootPart, 0)
                             task.wait(0.08)
                             pcall(firetouchinterest, targetPart, humanoidRootPart, 1)
-                            interacted = true
-                            task.wait(0.22)
+                            grabbed = true
+                            print("Grabbed with touch simulation")
                         end
 
-                        -- 3) Try RemoteEvent/Function on the model if previous methods didn't work
-                        if not interacted then
+                        -- 3) Try RemoteEvent/Function on the model
+                        if not grabbed then
                             for _, d in ipairs(trashCanModel:GetDescendants()) do
                                 if d:IsA("RemoteEvent") then
                                     pcall(function() d:FireServer() end)
-                                    interacted = true
-                                    task.wait(0.22)
+                                    grabbed = true
+                                    print("Grabbed with RemoteEvent")
                                     break
                                 elseif d:IsA("RemoteFunction") then
                                     pcall(function() d:InvokeServer() end)
-                                    interacted = true
-                                    task.wait(0.22)
+                                    grabbed = true
+                                    print("Grabbed with RemoteFunction")
                                     break
                                 end
                             end
                         end
 
-                        -- 4) Try ClickDetector on the MeshPart
-                        if not interacted and clickDetector then
+                        -- 4) Try ClickDetector
+                        if not grabbed and clickDetector then
                             if type(fireclickdetector) == "function" then
                                 pcall(fireclickdetector, clickDetector)
-                                interacted = true
                             else
                                 pcall(function() clickDetector:MouseClick(player) end)
-                                interacted = true
                             end
-                            task.wait(0.22)
+                            grabbed = true
+                            print("Grabbed with ClickDetector")
                         end
 
-                        -- 5) Try ProximityPrompt on the MeshPart
-                        if not interacted and prompt then
+                        -- 5) Try ProximityPrompt
+                        if not grabbed and prompt then
                             pcall(function() prompt:InputHoldBegin() end)
                             task.wait(0.2)
                             pcall(function() prompt:InputHoldEnd() end)
-                            interacted = true
-                            task.wait(0.22)
+                            grabbed = true
+                            print("Grabbed with ProximityPrompt")
                         end
 
                         -- 6) Last resort: VirtualUser screen click
-                        if not interacted then
+                        if not grabbed then
                             local camera = workspace.CurrentCamera
                             local vu = game:GetService("VirtualUser")
                             if camera and targetPart then
@@ -404,9 +424,14 @@ end)
                                     if okType then camera.CameraType = Enum.CameraType.Custom end
                                     if ok then camera.CFrame = originalCFrame end
                                 end)
-                                interacted = true
+                                grabbed = true
+                                print("Grabbed with VirtualUser click")
                             end
                         end
+
+                        -- Wait after grabbing to ensure it's in hand
+                        task.wait(0.5)
+                        print("Grab phase complete, waiting before throw...")
 
                         if not Options.TrashToggle.Value then break end
 
@@ -424,39 +449,109 @@ end)
                             continue
                         end
 
+                        -- ===== THROW TRASHCAN PHASE =====
                         local chosen = validTargets[math.random(1, #validTargets)]
                         local targetHRP = chosen.Character and chosen.Character:FindFirstChild("HumanoidRootPart")
                         if targetHRP then
-                            humanoidRootPart.CFrame = targetHRP.CFrame + Vector3.new(0, 3, 0)
-                            task.wait(0.15)
+                            -- Update character references again before throwing
+                            if not character or not character.Parent then
+                                character = player.Character
+                            end
+                            if character then
+                                humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+                            end
+                            
+                            if not humanoidRootPart then
+                                warn("HumanoidRootPart not found for throw, skipping")
+                                task.wait(0.5)
+                                continue
+                            end
 
-                            -- trigger throw using LeftClick method
-                            local throwSuccess = pcall(function()
-                                local args = {[1] = {["Goal"] = "LeftClick"}}
-                                workspace:WaitForChild("Live", 9e9)
-                                    :WaitForChild(character.Name, 9e9)
-                                    :WaitForChild("Communicate", 9e9)
-                                    :FireServer(unpack(args))
-                                task.wait(0.1)
-                                local args2 = {[1] = {["Goal"] = "LeftClickRelease"}}
-                                workspace:WaitForChild("Live", 9e9)
-                                    :WaitForChild(character.Name, 9e9)
-                                    :WaitForChild("Communicate", 9e9)
-                                    :FireServer(unpack(args2))
+                            print("Teleporting to target player:", chosen.Name)
+                            
+                            -- Randomly choose left or right side of the target
+                            local sideDirection = math.random(0, 1) == 0 and -1 or 1
+                            local sideDistance = 5 -- distance to the side
+                            
+                            -- Start constant teleportation loop
+                            local throwConnection
+                            local throwComplete = false
+                            
+                            throwConnection = RunService.Heartbeat:Connect(function()
+                                if not Options.TrashToggle.Value or throwComplete then
+                                    if throwConnection then
+                                        throwConnection:Disconnect()
+                                    end
+                                    return
+                                end
+                                
+                                -- Update target position constantly
+                                local currentTargetHRP = chosen.Character and chosen.Character:FindFirstChild("HumanoidRootPart")
+                                if currentTargetHRP and humanoidRootPart then
+                                    local targetCFrame = currentTargetHRP.CFrame
+                                    local sideOffset = targetCFrame.RightVector * (sideDistance * sideDirection)
+                                    humanoidRootPart.CFrame = CFrame.new(currentTargetHRP.Position + sideOffset + Vector3.new(0, 2, 0), currentTargetHRP.Position)
+                                end
                             end)
 
-                            -- fallback to other methods if LeftClick didn't work
-                            if not throwSuccess and clickDetector then
-                                if type(fireclickdetector) == "function" then
-                                    pcall(fireclickdetector, clickDetector)
-                                else
-                                    pcall(function() clickDetector:MouseClick(player) end)
+                            task.wait(0.4) -- Wait for initial positioning
+
+                            print("Attempting to throw trashcan...")
+                            local thrown = false
+
+                            -- Try LeftClick method multiple times (THROW)
+                            for throwAttempt = 1, 3 do
+                                local throwSuccess = pcall(function()
+                                    local args = {[1] = {["Goal"] = "LeftClick"}}
+                                    workspace:WaitForChild("Live", 9e9)
+                                        :WaitForChild(character.Name, 9e9)
+                                        :WaitForChild("Communicate", 9e9)
+                                        :FireServer(unpack(args))
+                                    task.wait(0.08)
+                                    local args2 = {[1] = {["Goal"] = "LeftClickRelease"}}
+                                    workspace:WaitForChild("Live", 9e9)
+                                        :WaitForChild(character.Name, 9e9)
+                                        :WaitForChild("Communicate", 9e9)
+                                        :FireServer(unpack(args2))
+                                end)
+                                
+                                if throwSuccess then
+                                    thrown = true
+                                    print("Threw with LeftClick method (attempt " .. throwAttempt .. ")")
+                                    break
                                 end
-                            elseif prompt then
-                                pcall(function() prompt:InputHoldBegin() end)
-                                task.wait(0.06)
-                                pcall(function() prompt:InputHoldEnd() end)
+                                task.wait(0.15)
                             end
+
+                            -- Fallback to other methods if LeftClick didn't work
+                            if not thrown then
+                                task.wait(0.2)
+                                if clickDetector then
+                                    if type(fireclickdetector) == "function" then
+                                        pcall(fireclickdetector, clickDetector)
+                                    else
+                                        pcall(function() clickDetector:MouseClick(player) end)
+                                    end
+                                    print("Threw with ClickDetector fallback")
+                                end
+                                
+                                if prompt then
+                                    pcall(function() prompt:InputHoldBegin() end)
+                                    task.wait(0.1)
+                                    pcall(function() prompt:InputHoldEnd() end)
+                                    print("Threw with ProximityPrompt fallback")
+                                end
+                            end
+                            
+                            -- Stop constant teleportation
+                            throwComplete = true
+                            if throwConnection then
+                                throwConnection:Disconnect()
+                            end
+                            
+                            -- Delay after throwing before next trashcan
+                            print("Throw complete, waiting before next trashcan...")
+                            task.wait(1)
                         end
 
                         task.wait(0.5)
@@ -521,5 +616,3 @@ Fluent:Notify({
 })
 
 SaveManager:LoadAutoloadConfig()
-
-
